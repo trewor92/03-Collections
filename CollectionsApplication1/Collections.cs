@@ -39,19 +39,23 @@ namespace CollectionApplication1
             if (count < 0)
                 throw new ArgumentException("{0} is less then 0", count.ToString());
 
-            int last = 0, lastlast = 0, current = 1;
+            int last = 0, lastlast = 1, current = 1;
 
 
             for (int i = 0; i < count; i++)
             {
-                current = (last + lastlast) >= current ? (last + lastlast) : current; //поскольку последовательсть фибоначчи неубывающая
+             
+
+                current = last + lastlast;
 
                 yield return current;
 
+
                 lastlast = last;
                 last = current;
-
             }
+
+            yield break;
 
             // TODO : Implement Fibonacci sequence generator
             //throw new NotImplementedException();
@@ -72,68 +76,25 @@ namespace CollectionApplication1
         public static IEnumerable<string> Tokenize(TextReader reader)
         {
             if (reader == null)
-                throw new ArgumentNullException("reader is null");
+                throw new ArgumentNullException("reader is null!");
 
             char[] delimeters = new[] { ',', ' ', '.', '\t', '\n' };
 
-            Dictionary<char,char> special= new Dictionary<char, char>
-            {
-                ['a']='\a',
-                ['b']='\b',
-                ['t']='\t',
-                ['n']='\n',
-                ['v']='\v',
-                ['f']='\f',
-                ['r']='\r'
-            };
-
-
-            List<char> currentCharList = new List<char>();
-            int current, next;
-            char currentChar, nextChar;
-         
-
+            
             while (true)
             {
-                current = reader.Read();
 
-                if (current < 0)   // похожие места
-                {
+                string line = reader.ReadLine();
 
-                    if (currentCharList.Count != 0)
-                        yield return new String(currentCharList.ToArray());
-                    yield break;
-                }
+                if (line == null) yield break;
 
-                currentChar = Convert.ToChar(current);
+                string[] str = line.Split(delimeters,StringSplitOptions.RemoveEmptyEntries);
+                if (str.Length == 0)
+                    continue;
 
-                if (currentChar == '\\')
-                {
-                    next = reader.Peek();
-                    if (next >= 0)
-                    {
-                        nextChar = Convert.ToChar(next);
-                        if (special.ContainsKey(nextChar))
-                        {
-                            currentChar = special[currentChar];
-                            reader.Read();
-                        }
-                    }
-
-                }
-
-                if (Array.Exists(delimeters, x => x == currentChar)) // похожие места
-                {
-                    if (currentCharList.Count != 0)
-                        yield return new String(currentCharList.ToArray());
-                    currentCharList.Clear();
-                }
-                else
-                {
-                    currentCharList.Add(currentChar);
-                }
-
-            }
+                foreach (string l in str)
+                    yield return l;
+            }                       
 
             // TODO : Implement the tokenizer
             //throw new NotImplementedException();
@@ -176,14 +137,15 @@ namespace CollectionApplication1
                 var element = stack.Pop();
                 yield return element.Data;
 
-                if (element.Children != null)
-                {
-                    foreach (ITreeNode<T> e in element.Children)
-                        tempStack.Push(e);
+                if (element.Children == null) continue;
+                
+              
+                foreach (ITreeNode<T> e in element.Children)
+                    tempStack.Push(e);
 
-                    while (tempStack.Count > 0)
-                        stack.Push(tempStack.Pop());
-                }
+                while (tempStack.Count > 0)
+                    stack.Push(tempStack.Pop());
+                
             }
 
             // TODO : Implement the tree depth traversal algorithm
@@ -225,9 +187,12 @@ namespace CollectionApplication1
                 var element = queue.Dequeue();
                 yield return element.Data;
 
-                if (element.Children != null)
-                    foreach (ITreeNode<T> e in element.Children)
-                        queue.Enqueue(e);
+                if (element.Children == null) continue;
+
+                foreach (var e in element.Children)
+                    queue.Enqueue(e);
+
+              
             }
             // TODO : Implement the tree width traversal algorithm
             //throw new NotImplementedException();
@@ -327,10 +292,16 @@ namespace CollectionApplication1
         /// </example>
         public static TValue GetOrBuildValue<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key, Func<TValue> builder)
         {
-            if (!dictionary.ContainsKey(key))
-                dictionary.Add(key, builder());
+            TValue value;
 
-            return dictionary[key];
+            if (!dictionary.TryGetValue(key, out value))
+            {
+                value = builder();
+                dictionary.Add(key, value);
+            }
+                
+
+            return value;
             // TODO : Implement GetOrBuildValue method for cache
             //throw new NotImplementedException();
         }
